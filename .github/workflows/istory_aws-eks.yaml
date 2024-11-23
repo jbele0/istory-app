@@ -1,4 +1,4 @@
-name: Java CI with Gradle
+name: Java CI with Gradle1
 
 on:
   push:
@@ -100,3 +100,33 @@ jobs:
       - name: 9.Docker Push
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/istory:${{ env.DOCKER_TAG }}        
+      # 서비스 리포지토리 체크아웃
+      - name: 10.서비스 리포지토리 체크아웃
+        uses: actions/checkout@v4
+        with:
+          repository: jbele0/istory-service  
+          ref: main
+          path: .
+      
+      # 이미지 태그 업데이트
+      - name: 11.쿠버네티스 매니페스트 파일 이미지 태그 업데이트
+        run: |
+          # 파일이 존재하는지 확인
+          ls -la
+          # 현재 파일 내용 확인
+          cat istory-app-deploy.yaml
+          sed -i "s|image: ${{ secrets.DOCKER_USERNAME }}\/istory.*|image: ${{ secrets.DOCKER_USERNAME }}\/istory:${{ env.DOCKER_TAG }}|g" istory-app-deploy.yaml
+          # 변경된 내용 확인
+          cat istory-app-deploy.yaml
+      
+      # 변경사항 커밋 및 푸시
+      - name: 12.서비스 리포지토리 변경사항 커밋 및 푸시
+        run: |
+          git config --global user.name 'jbele0'
+          git config --global user.email 'jb0elephant@gmail.com'
+          git commit -am "Update image tag to ${{ env.DOCKER_TAG }}"
+          git remote set-url origin https://${{ secrets.PAT }}@github.com/jbele0/istory-app.git
+          
+          git push origin main          
+
+
